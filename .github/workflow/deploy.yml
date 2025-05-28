@@ -1,0 +1,58 @@
+
+name: Deploy to AWS
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    env:
+      AWS_REGION: us-east-1
+      S3_BUCKET: myfirstblogsbucket
+      EB_APPLICATION_NAME: blog-app
+      EB_ENVIRONMENT_NAME: Blog-app-env 
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build frontend
+        run: npm run build
+
+      - name: Upload to S3 (Frontend)
+        run: |
+          aws s3 sync ./build s3://$S3_BUCKET --delete
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+      - name: Zip backend files
+        run: zip -r app.zip . -x "node_modules/*" ".git/*" "build/*"
+
+      - name: Deploy to Elastic Beanstalk (Backend)
+        run: |
+          aws elasticbeanstalk create-application-version \
+            --application-name $EB_APPLICATION_NAME \
+            --version-label v-${{ github.run_number }} \
+            --source-bundle S3Bucket=$S3_BUCKET,S3Key=app.zip \
+            --region $AWS_REGION
+
+          aws elasticbeanstalk update-environment \
+            --environment-name $EB_ENVIRONMENT_NAME \
+            --version-label v-${{ github.run_number }} \
+            --region $AWS_REGION
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
