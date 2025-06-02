@@ -8,10 +8,10 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(bodyParser.json());
 
-// const redisClient = createClient();
-// redisClient.on("error", (err) => {
-//   console.error("redis error", err);
-// });
+const redisClient = createClient();
+redisClient.on("error", (err) => {
+  console.error("redis error", err);
+});
 
 (async () => {
   try {
