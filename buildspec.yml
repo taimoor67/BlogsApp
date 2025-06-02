@@ -7,12 +7,18 @@ phases:
     commands:
       - echo Installing frontend dependencies...
       - cd frontend
+      - npm install --legacy-peer-deps
+      - cd ../backend
+      - echo Installing backend dependencies...
       - npm install
+      - cd ..
 
   build:
     commands:
-      - echo Building the React app...
+      - echo Building React frontend...
+      - cd frontend
       - npm run build
+      - cd ..
 
 artifacts:
   files:
